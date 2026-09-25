@@ -5,7 +5,7 @@ iQuest 是一个适合个人与小团队私有部署的全栈问卷平台。它�
 ## 技术栈
 
 - Next.js 15、React 19、TypeScript
-- Prisma 6、PostgreSQL
+- Prisma 6、MySQL 8
 - HttpOnly Cookie 会话、bcrypt 密码哈希
 - 原生 CSS 响应式界面
 

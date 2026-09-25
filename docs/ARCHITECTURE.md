@@ -9,6 +9,9 @@
 - `lib/auth.ts`：签名会话 Cookie 与权限判断。
 - `prisma/schema.prisma`：用户、RBAC、问卷、题目、逻辑、答卷和事件模型。
 
+持久层使用 MySQL 8，数据库与连接字符集统一为 `utf8mb4`。Prisma migration 位于
+`prisma/migrations`，生产环境通过 `prisma migrate deploy` 应用。
+
 ## 安全边界
 
 密码使用 bcrypt（cost 12）保存。会话 Cookie 设置 `HttpOnly`、`SameSite=Lax`，生产环境启用 `Secure`。控制台数据全部按当前用户所有权过滤，管理接口额外检查权限。IP 和设备标识经过带服务端密钥的 SHA-256 哈希后保存。

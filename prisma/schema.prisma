@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -39,7 +39,7 @@ model User {
 model Role {
   id          String           @id @default(cuid())
   name        String           @unique
-  description String?
+  description String?          @db.Text
   users       UserRole[]
   permissions RolePermission[]
 }
@@ -71,7 +71,7 @@ model Survey {
   id                 String       @id @default(cuid())
   slug               String       @unique
   title              String
-  description        String?
+  description        String?      @db.Text
   status             SurveyStatus @default(DRAFT)
   allowAnonymous     Boolean      @default(true)
   requireLogin       Boolean      @default(false)
@@ -100,7 +100,7 @@ model SurveyQuestion {
   order       Int
   type        QuestionType
   title       String
-  description String?
+  description String?      @db.Text
   required    Boolean      @default(false)
   config      Json
   survey      Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)

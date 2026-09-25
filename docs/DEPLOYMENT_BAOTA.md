@@ -1,24 +1,25 @@
 # 宝塔 Ubuntu 部署指南
 
-本文使用 Nginx + PM2 + PostgreSQL，不依赖 Docker。示例域名为 `survey.example.com`，项目目录为 `/www/wwwroot/quest`。
+本文使用 Nginx + PM2 + MySQL 8，不依赖 Docker。示例域名为 `survey.example.com`，项目目录为 `/www/wwwroot/quest`。
 
 ## 1. 安装运行环境
 
-在宝塔“软件商店”安装 Nginx，并安装 Node.js 20 LTS。通过终端安装 PostgreSQL 与 PM2：
+在宝塔“软件商店”安装 Nginx、MySQL 8.0，并安装 Node.js 20 LTS。通过终端安装 PM2：
 
 ```bash
 sudo apt update
-sudo apt install -y postgresql postgresql-contrib
 sudo npm install -g pm2
 ```
 
 ## 2. 创建数据库
 
-```bash
-sudo -u postgres psql
-CREATE USER quest WITH PASSWORD '替换为强密码';
-CREATE DATABASE quest OWNER quest ENCODING 'UTF8';
-\q
+在宝塔数据库面板创建数据库 `quest` 和同名用户，字符集选择 `utf8mb4`。也可以登录 MySQL 手动创建：
+
+```sql
+CREATE DATABASE quest CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'quest'@'127.0.0.1' IDENTIFIED BY '替换为强密码';
+GRANT ALL PRIVILEGES ON quest.* TO 'quest'@'127.0.0.1';
+FLUSH PRIVILEGES;
 ```
 
 ## 3. 上传与配置
@@ -26,13 +27,13 @@ CREATE DATABASE quest OWNER quest ENCODING 'UTF8';
 将项目上传到 `/www/wwwroot/quest`，在目录中创建 `.env.production`：
 
 ```dotenv
-DATABASE_URL="postgresql://quest:数据库密码@127.0.0.1:5432/quest?schema=public"
+DATABASE_URL="mysql://quest:数据库密码@127.0.0.1:3306/quest"
 SESSION_SECRET="使用 openssl rand -base64 48 生成"
 NEXT_PUBLIC_APP_URL="https://survey.example.com"
 NODE_ENV="production"
 ```
 
-确保该文件权限为 `600`，且不要提交到 Git。
+确保该文件权限为 `600`，且不要提交到 Git。数据库密码若包含 `@`、`:`、`/` 等字符，需要先进行 URL 编码。
 
 ## 4. 安装、迁移与构建
 
@@ -71,7 +72,7 @@ location / {
 }
 ```
 
-在宝塔 SSL 面板申请 Let's Encrypt 证书，开启强制 HTTPS。防火墙只开放 80/443，PostgreSQL 和 3000 端口不对公网开放。
+在宝塔 SSL 面板申请 Let's Encrypt 证书，开启强制 HTTPS。防火墙只开放 80/443，MySQL 3306 和应用 3000 端口不对公网开放。
 
 ## 7. 更新
 
@@ -89,8 +90,11 @@ pm2 reload quest
 ## 8. 备份与恢复
 
 ```bash
-sudo -u postgres pg_dump -Fc quest > /www/backup/quest-$(date +%F).dump
-sudo -u postgres pg_restore --clean --if-exists -d quest /www/backup/quest-2026-01-01.dump
+mysqldump --single-transaction --routines --triggers -u quest -p quest \
+  | gzip > /www/backup/quest-$(date +%F).sql.gz
+
+gunzip -c /www/backup/quest-2026-01-01.sql.gz \
+  | mysql -u quest -p quest
 ```
 
 在宝塔计划任务中每天执行备份，并设置异地副本与保留周期。恢复会覆盖现有数据库，必须先在测试库验证备份可用性。
@@ -99,6 +103,10 @@ sudo -u postgres pg_restore --clean --if-exists -d quest /www/backup/quest-2026-
 
 - `pm2 status`：确认应用在线。
 - `pm2 logs quest --lines 100`：查看应用错误。
-- `sudo -u postgres psql -d quest`：检查数据库连接。
+- `mysql -h 127.0.0.1 -u quest -p quest`：检查数据库连接。
 - `nginx -t`：验证 Nginx 配置。
 - 502 通常表示 PM2 未运行、端口错误或构建未完成。
+
+## 10. 从 PostgreSQL 切换
+
+当前迁移历史以全新 MySQL 数据库为起点，不会自动迁移已有 PostgreSQL 数据。如果旧环境已经产生正式答卷，应先冻结写入，通过专用迁移脚本导出并转换数据，再切换 `DATABASE_URL`；不要对已有 PostgreSQL 数据库执行这套 MySQL migration。
