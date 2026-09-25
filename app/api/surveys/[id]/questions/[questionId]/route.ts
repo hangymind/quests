@@ -1,2 +1,17 @@
-import { NextResponse } from "next/server"; import { getSessionUser } from "@/lib/auth"; import { prisma } from "@/lib/prisma";
-export async function DELETE(_:Request,{params}:{params:Promise<{id:string;questionId:string}>}) { const user=await getSessionUser(); if(!user)return NextResponse.json({error:"未登录"},{status:401}); const {id,questionId}=await params; const q=await prisma.surveyQuestion.findFirst({where:{id:questionId,surveyId:id,survey:{ownerId:user.id}}}); if(!q)return NextResponse.json({error:"无权访问"},{status:404}); await prisma.surveyQuestion.delete({where:{id:questionId}}); return NextResponse.json({ok:true}); }
+import { NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+export async function DELETE(
+  _: Request,
+  { params }: { params: Promise<{ id: string; questionId: string }> },
+) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "未登录" }, { status: 401 });
+  const { id, questionId } = await params;
+  const q = await prisma.surveyQuestion.findFirst({
+    where: { id: questionId, surveyId: id, survey: { ownerId: user.id } },
+  });
+  if (!q) return NextResponse.json({ error: "无权访问" }, { status: 404 });
+  await prisma.surveyQuestion.delete({ where: { id: questionId } });
+  return NextResponse.json({ ok: true });
+}

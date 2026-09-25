@@ -1,3 +1,79 @@
 "use client";
-import { FormEvent, useState } from "react";import { useRouter } from "next/navigation";
-export function CreateSurvey(){const router=useRouter();const[open,setOpen]=useState(false);const[loading,setLoading]=useState(false);const[error,setError]=useState("");async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setLoading(true);const f=new FormData(e.currentTarget);const res=await fetch("/api/surveys",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title:f.get("title"),description:f.get("description")})});const data=await res.json();setLoading(false);if(!res.ok)return setError(data.error);router.push(`/surveys/${data.id}/edit`);router.refresh()}return <>{<button className="btn btn-primary" onClick={()=>setOpen(true)}>＋ 创建问卷</button>}{open&&<div className="modal-backdrop" onMouseDown={()=>setOpen(false)}><div className="modal card" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><span className="eyebrow">New survey</span><h2>创建一份新问卷</h2></div><button className="btn icon-btn" onClick={()=>setOpen(false)} aria-label="关闭">×</button></div><form onSubmit={submit}><div className="field"><label>问卷标题</label><input className="input" name="title" maxLength={100} required autoFocus placeholder="例如：产品体验调研"/></div><div className="field"><label>说明（可选）</label><textarea className="input" name="description" maxLength={500} placeholder="告诉填写者这份问卷的用途"/></div>{error&&<div className="auth-error">{error}</div>}<div className="modal-actions"><button type="button" className="btn" onClick={()=>setOpen(false)}>取消</button><button className="btn btn-primary" disabled={loading}>{loading?"创建中":"创建并编辑"}</button></div></form></div></div>}</>}
+import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+export function CreateSurvey() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  async function submit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    const f = new FormData(e.currentTarget);
+    const res = await fetch("/api/surveys", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: f.get("title"), description: f.get("description") }),
+    });
+    const data = await res.json();
+    setLoading(false);
+    if (!res.ok) return setError(data.error);
+    router.push(`/surveys/${data.id}/edit`);
+    router.refresh();
+  }
+  return (
+    <>
+      {
+        <button className="btn btn-primary" onClick={() => setOpen(true)}>
+          ＋ 创建问卷
+        </button>
+      }
+      {open && (
+        <div className="modal-backdrop" onMouseDown={() => setOpen(false)}>
+          <div className="modal card" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <div>
+                <span className="eyebrow">New survey</span>
+                <h2>创建一份新问卷</h2>
+              </div>
+              <button className="btn icon-btn" onClick={() => setOpen(false)} aria-label="关闭">
+                ×
+              </button>
+            </div>
+            <form onSubmit={submit}>
+              <div className="field">
+                <label>问卷标题</label>
+                <input
+                  className="input"
+                  name="title"
+                  maxLength={100}
+                  required
+                  autoFocus
+                  placeholder="例如：产品体验调研"
+                />
+              </div>
+              <div className="field">
+                <label>说明（可选）</label>
+                <textarea
+                  className="input"
+                  name="description"
+                  maxLength={500}
+                  placeholder="告诉填写者这份问卷的用途"
+                />
+              </div>
+              {error && <div className="auth-error">{error}</div>}
+              <div className="modal-actions">
+                <button type="button" className="btn" onClick={() => setOpen(false)}>
+                  取消
+                </button>
+                <button className="btn btn-primary" disabled={loading}>
+                  {loading ? "创建中" : "创建并编辑"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

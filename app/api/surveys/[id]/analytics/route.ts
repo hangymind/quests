@@ -1,2 +1,84 @@
-import { NextResponse } from "next/server"; import { getSessionUser } from "@/lib/auth"; import { prisma } from "@/lib/prisma";
-export async function GET(_:Request,{params}:{params:Promise<{id:string}>}) { const user=await getSessionUser();if(!user)return NextResponse.json({error:"未登录"},{status:401});const {id}=await params;const survey=await prisma.survey.findFirst({where:{id,ownerId:user.id},include:{questions:{orderBy:{order:"asc"}},responses:{where:{status:"COMPLETED"},include:{answers:true},orderBy:{completedAt:"desc"}},events:true}});if(!survey)return NextResponse.json({error:"无权访问"},{status:404});const views=survey.events.filter(e=>e.type==="VIEW").length,completed=survey.responses.length;const days=[...Array(7)].map((_,i)=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-6+i);const next=new Date(d);next.setDate(next.getDate()+1);return{date:`${d.getMonth()+1}/${d.getDate()}`,count:survey.responses.filter(r=>r.completedAt&&r.completedAt>=d&&r.completedAt<next).length}});const questions=survey.questions.map(q=>{const values=survey.responses.flatMap(r=>r.answers.filter(a=>a.questionId===q.id).map(a=>a.value));const distribution:Record<string,number>={};values.flatMap(v=>Array.isArray(v)?v:[v]).forEach(v=>{const key=String(v);distribution[key]=(distribution[key]||0)+1});const nums=values.map(Number).filter(Number.isFinite);return{id:q.id,title:q.title,type:q.type,total:values.length,distribution,numeric:nums.length?{average:nums.reduce((a,b)=>a+b,0)/nums.length,min:Math.min(...nums),max:Math.max(...nums)}:null,texts:[...values].filter(v=>typeof v==="string").slice(0,50)}});return NextResponse.json({summary:{views,started:views,completed,completionRate:views?Math.round(completed/views*100):0,abandonRate:views?Math.max(0,100-Math.round(completed/views*100)):0},days,questions,responses:survey.responses.slice(0,50)});}
+import { NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "未登录" }, { status: 401 });
+  const { id } = await params;
+  const [survey, views] = await Promise.all([
+    prisma.survey.findFirst({
+      where: { id, ownerId: user.id },
+      include: {
+        questions: { orderBy: { order: "asc" } },
+        responses: {
+          where: { status: "COMPLETED" },
+          include: { answers: true },
+          orderBy: { completedAt: "desc" },
+        },
+      },
+    }),
+    prisma.surveyEvent.count({ where: { surveyId: id, type: "VIEW" } }),
+  ]);
+  if (!survey) return NextResponse.json({ error: "无权访问" }, { status: 404 });
+  const completed = survey.responses.length;
+  const days = [...Array(7)].map((_, i) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - 6 + i);
+    const next = new Date(d);
+    next.setDate(next.getDate() + 1);
+    return {
+      date: `${d.getMonth() + 1}/${d.getDate()}`,
+      count: survey.responses.filter(
+        (r) => r.completedAt && r.completedAt >= d && r.completedAt < next,
+      ).length,
+    };
+  });
+  const valuesByQuestion = new Map<string, unknown[]>();
+  for (const response of survey.responses) {
+    for (const answer of response.answers) {
+      const values = valuesByQuestion.get(answer.questionId) ?? [];
+      values.push(answer.value);
+      valuesByQuestion.set(answer.questionId, values);
+    }
+  }
+
+  const questions = survey.questions.map((q) => {
+    const values = valuesByQuestion.get(q.id) ?? [];
+    const distribution: Record<string, number> = {};
+    values
+      .flatMap((v) => (Array.isArray(v) ? v : [v]))
+      .forEach((v) => {
+        const key = String(v);
+        distribution[key] = (distribution[key] || 0) + 1;
+      });
+    const nums = values.map(Number).filter(Number.isFinite);
+    return {
+      id: q.id,
+      title: q.title,
+      type: q.type,
+      total: values.length,
+      distribution,
+      numeric: nums.length
+        ? {
+            average: nums.reduce((a, b) => a + b, 0) / nums.length,
+            min: Math.min(...nums),
+            max: Math.max(...nums),
+          }
+        : null,
+      texts: [...values].filter((v) => typeof v === "string").slice(0, 50),
+    };
+  });
+  return NextResponse.json({
+    summary: {
+      views,
+      started: views,
+      completed,
+      completionRate: views ? Math.round((completed / views) * 100) : 0,
+      abandonRate: views ? Math.max(0, 100 - Math.round((completed / views) * 100)) : 0,
+    },
+    days,
+    questions,
+    responses: survey.responses.slice(0, 50),
+  });
+}

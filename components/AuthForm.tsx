@@ -4,20 +4,83 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
-  const router = useRouter(); const [error, setError] = useState(""); const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   async function submit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault(); setLoading(true); setError(""); const form = new FormData(e.currentTarget);
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    const form = new FormData(e.currentTarget);
     try {
-      const res = await fetch(`/api/auth/${mode}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: form.get("username"), password: form.get("password") }) });
+      const res = await fetch(`/api/auth/${mode}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: form.get("username"), password: form.get("password") }),
+      });
       const text = await res.text();
       let data: { error?: string } = {};
-      try { data = text ? JSON.parse(text) : {}; } catch { data = {}; }
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = {};
+      }
       if (!res.ok) return setError(data.error || "服务暂时不可用，请检查数据库连接");
-      router.push("/dashboard"); router.refresh();
+      router.push("/dashboard");
+      router.refresh();
     } catch {
       setError("无法连接服务，请稍后重试");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
   const register = mode === "register";
-  return <form onSubmit={submit}><span className="eyebrow">{register ? "Create account" : "Welcome back"}</span><h1>{register ? "创建你的工作空间" : "登录澄问"}</h1><p className="intro">{register ? "首个注册账号将自动成为超级管理员。" : "继续管理问卷、答卷和统计。"}</p>{error && <div className="auth-error" role="alert">{error}</div>}<div className="field"><label htmlFor="username">用户名</label><input className="input" id="username" name="username" autoComplete="username" minLength={3} maxLength={24} required placeholder="3-24 位字符"/></div><div className="field"><label htmlFor="password">密码</label><input className="input" id="password" name="password" type="password" autoComplete={register ? "new-password" : "current-password"} minLength={8} required placeholder="至少 8 位"/></div><button className="btn btn-primary" disabled={loading}>{loading && <span className="spinner"/>}{loading ? "请稍候" : register ? "注册并进入" : "登录"}</button><div className="auth-switch">{register ? "已有账号？" : "还没有账号？"} <Link href={register ? "/login" : "/register"}>{register ? "登录" : "立即注册"}</Link></div></form>;
+  return (
+    <form onSubmit={submit}>
+      <span className="eyebrow">{register ? "Create account" : "Welcome back"}</span>
+      <h1>{register ? "创建你的工作空间" : "登录 iQuest"}</h1>
+      <p className="intro">
+        {register ? "首个注册账号将自动成为超级管理员。" : "继续管理问卷、答卷和统计。"}
+      </p>
+      {error && (
+        <div className="auth-error" role="alert">
+          {error}
+        </div>
+      )}
+      <div className="field">
+        <label htmlFor="username">用户名</label>
+        <input
+          className="input"
+          id="username"
+          name="username"
+          autoComplete="username"
+          minLength={3}
+          maxLength={24}
+          required
+          placeholder="3-24 位字符"
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="password">密码</label>
+        <input
+          className="input"
+          id="password"
+          name="password"
+          type="password"
+          autoComplete={register ? "new-password" : "current-password"}
+          minLength={8}
+          required
+          placeholder="至少 8 位"
+        />
+      </div>
+      <button className="btn btn-primary" disabled={loading}>
+        {loading && <span className="spinner" />}
+        {loading ? "请稍候" : register ? "注册并进入" : "登录"}
+      </button>
+      <div className="auth-switch">
+        {register ? "已有账号？" : "还没有账号？"}{" "}
+        <Link href={register ? "/login" : "/register"}>{register ? "登录" : "立即注册"}</Link>
+      </div>
+    </form>
+  );
 }

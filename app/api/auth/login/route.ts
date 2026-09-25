@@ -6,8 +6,15 @@ import { createSession } from "@/lib/auth";
 export async function POST(request: Request) {
   try {
     const { username, password } = await request.json();
-    const user = typeof username === "string" ? await prisma.user.findUnique({ where: { username } }) : null;
-    if (!user || !user.isActive || typeof password !== "string" || !(await bcrypt.compare(password, user.passwordHash))) return NextResponse.json({ error: "用户名或密码错误" }, { status: 401 });
+    const user =
+      typeof username === "string" ? await prisma.user.findUnique({ where: { username } }) : null;
+    if (
+      !user ||
+      !user.isActive ||
+      typeof password !== "string" ||
+      !(await bcrypt.compare(password, user.passwordHash))
+    )
+      return NextResponse.json({ error: "用户名或密码错误" }, { status: 401 });
     await createSession(user.id);
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -1,2 +1,24 @@
-import { NextResponse } from "next/server"; import { prisma } from "@/lib/prisma";
-export async function GET(_:Request,{params}:{params:Promise<{slug:string}>}) { const {slug}=await params; const survey=await prisma.survey.findUnique({where:{slug},include:{questions:{orderBy:{order:"asc"}},rules:true}}); if(!survey)return NextResponse.json({error:"问卷不存在"},{status:404}); const now=new Date(); if(survey.status!=="ACTIVE")return NextResponse.json({error:survey.status==="PAUSED"?"问卷暂时暂停":"问卷尚未开放或已结束"},{status:423}); if((survey.startsAt&&survey.startsAt>now)||(survey.endsAt&&survey.endsAt<now))return NextResponse.json({error:"当前不在填写时间内"},{status:423}); await prisma.surveyEvent.create({data:{surveyId:survey.id,type:"VIEW"}}); const {ownerId,...publicSurvey}=survey; void ownerId; return NextResponse.json(publicSurvey); }
+import { after, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+export async function GET(_: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const survey = await prisma.survey.findUnique({
+    where: { slug },
+    include: { questions: { orderBy: { order: "asc" } }, rules: true },
+  });
+  if (!survey) return NextResponse.json({ error: "问卷不存在" }, { status: 404 });
+  const now = new Date();
+  if (survey.status !== "ACTIVE")
+    return NextResponse.json(
+      { error: survey.status === "PAUSED" ? "问卷暂时暂停" : "问卷尚未开放或已结束" },
+      { status: 423 },
+    );
+  if ((survey.startsAt && survey.startsAt > now) || (survey.endsAt && survey.endsAt < now))
+    return NextResponse.json({ error: "当前不在填写时间内" }, { status: 423 });
+  after(async () => {
+    await prisma.surveyEvent.create({ data: { surveyId: survey.id, type: "VIEW" } });
+  });
+  const { ownerId, ...publicSurvey } = survey;
+  void ownerId;
+  return NextResponse.json(publicSurvey);
+}

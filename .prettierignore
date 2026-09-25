@@ -1,0 +1,6 @@
+.next
+.next-*
+node_modules
+public/assets
+package-lock.json
+*.tsbuildinfo

@@ -12,7 +12,13 @@ function sign(value: string) {
 export async function createSession(userId: string) {
   const expires = Date.now() + 1000 * 60 * 60 * 24 * 14;
   const payload = Buffer.from(JSON.stringify({ userId, expires })).toString("base64url");
-  (await cookies()).set(COOKIE, `${payload}.${sign(payload)}`, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", expires });
+  (await cookies()).set(COOKIE, `${payload}.${sign(payload)}`, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    expires,
+  });
 }
 
 export async function destroySession() {
@@ -23,14 +29,62 @@ export async function getSessionUser() {
   const raw = (await cookies()).get(COOKIE)?.value;
   if (!raw) return null;
   const [payload, signature] = raw.split(".");
-  if (!payload || !signature || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(sign(payload)))) return null;
+  if (
+    !payload ||
+    !signature ||
+    !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(sign(payload)))
+  )
+    return null;
   try {
-    const data = JSON.parse(Buffer.from(payload, "base64url").toString()) as { userId: string; expires: number };
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString()) as {
+      userId: string;
+      expires: number;
+    };
     if (data.expires < Date.now()) return null;
-    return prisma.user.findFirst({ where: { id: data.userId, isActive: true }, include: { roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } } } });
-  } catch { return null; }
+    return prisma.user.findFirst({
+      where: { id: data.userId, isActive: true },
+      select: {
+        id: true,
+        username: true,
+        roles: {
+          select: {
+            role: {
+              select: {
+                id: true,
+                name: true,
+                permissions: { select: { permission: { select: { key: true } } } },
+              },
+            },
+          },
+        },
+      },
+    });
+  } catch {
+    return null;
+  }
 }
 
-export function hasPermission(user: NonNullable<Awaited<ReturnType<typeof getSessionUser>>>, permission: string) {
-  return user.roles.some(({ role }) => role.name === "超级管理员" || role.permissions.some((item) => item.permission.key === permission));
+export function hasPermission(
+  user: NonNullable<Awaited<ReturnType<typeof getSessionUser>>>,
+  permission: string,
+) {
+  return user.roles.some(
+    ({ role }) =>
+      role.name === "超级管理员" ||
+      role.permissions.some((item) => item.permission.key === permission),
+  );
+}
+
+const SUPER_ADMIN_PERMISSIONS = [
+  "survey:create",
+  "survey:edit",
+  "survey:publish",
+  "survey:analytics",
+  "survey:export",
+  "admin:users",
+  "admin:roles",
+] as const;
+
+export function isSuperAdmin(user: NonNullable<Awaited<ReturnType<typeof getSessionUser>>>) {
+  return SUPER_ADMIN_PERMISSIONS.every((permission) => hasPermission(user, permission));
 }

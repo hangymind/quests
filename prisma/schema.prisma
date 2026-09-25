@@ -90,6 +90,8 @@ model Survey {
   rules              SurveyLogicRule[]
   responses          SurveyResponse[]
   events             SurveyEvent[]
+
+  @@index([ownerId, updatedAt])
 }
 
 model SurveyQuestion {
@@ -132,6 +134,8 @@ model SurveyResponse {
   respondent   User?        @relation(fields: [respondentId], references: [id])
   answers      SurveyAnswer[]
   @@index([surveyId, completedAt])
+  @@index([surveyId, status, ipHash])
+  @@index([surveyId, status, deviceHash])
 }
 
 model SurveyAnswer {
@@ -151,4 +155,5 @@ model SurveyEvent {
   createdAt DateTime @default(now())
   survey    Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
   @@index([surveyId, createdAt])
+  @@index([surveyId, type])
 }

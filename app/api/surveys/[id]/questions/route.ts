@@ -1,4 +1,61 @@
-import { NextResponse } from "next/server"; import { QuestionType } from "@prisma/client"; import { getSessionUser } from "@/lib/auth"; import { prisma } from "@/lib/prisma";
-async function owned(id:string,userId:string){return prisma.survey.findFirst({where:{id,ownerId:userId}})}
-export async function POST(request:Request,{params}:{params:Promise<{id:string}>}) { const user=await getSessionUser(); if(!user)return NextResponse.json({error:"未登录"},{status:401}); const {id}=await params;if(!await owned(id,user.id))return NextResponse.json({error:"无权访问"},{status:404}); const b=await request.json(); if(!Object.values(QuestionType).includes(b.type)||!b.title)return NextResponse.json({error:"题目数据无效"},{status:400}); const count=await prisma.surveyQuestion.count({where:{surveyId:id}}); return NextResponse.json(await prisma.surveyQuestion.create({data:{surveyId:id,order:count+1,type:b.type,title:b.title,description:b.description||null,required:Boolean(b.required),config:b.config||{}}}),{status:201}); }
-export async function PUT(request:Request,{params}:{params:Promise<{id:string}>}) { const user=await getSessionUser(); if(!user)return NextResponse.json({error:"未登录"},{status:401}); const {id}=await params;if(!await owned(id,user.id))return NextResponse.json({error:"无权访问"},{status:404}); const {questions}=await request.json(); await prisma.$transaction(questions.map((q:{id:string;order:number;title:string;description?:string;required:boolean;config:object})=>prisma.surveyQuestion.update({where:{id:q.id},data:{order:q.order,title:q.title,description:q.description||null,required:q.required,config:q.config}}))); return NextResponse.json({ok:true}); }
+import { NextResponse } from "next/server";
+import { QuestionType } from "@prisma/client";
+import { getSessionUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+async function owned(id: string, userId: string) {
+  return prisma.survey.findFirst({ where: { id, ownerId: userId } });
+}
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "未登录" }, { status: 401 });
+  const { id } = await params;
+  if (!(await owned(id, user.id))) return NextResponse.json({ error: "无权访问" }, { status: 404 });
+  const b = await request.json();
+  if (!Object.values(QuestionType).includes(b.type) || !b.title)
+    return NextResponse.json({ error: "题目数据无效" }, { status: 400 });
+  const count = await prisma.surveyQuestion.count({ where: { surveyId: id } });
+  return NextResponse.json(
+    await prisma.surveyQuestion.create({
+      data: {
+        surveyId: id,
+        order: count + 1,
+        type: b.type,
+        title: b.title,
+        description: b.description || null,
+        required: Boolean(b.required),
+        config: b.config || {},
+      },
+    }),
+    { status: 201 },
+  );
+}
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getSessionUser();
+  if (!user) return NextResponse.json({ error: "未登录" }, { status: 401 });
+  const { id } = await params;
+  if (!(await owned(id, user.id))) return NextResponse.json({ error: "无权访问" }, { status: 404 });
+  const { questions } = await request.json();
+  await prisma.$transaction(
+    questions.map(
+      (q: {
+        id: string;
+        order: number;
+        title: string;
+        description?: string;
+        required: boolean;
+        config: object;
+      }) =>
+        prisma.surveyQuestion.update({
+          where: { id: q.id },
+          data: {
+            order: q.order,
+            title: q.title,
+            description: q.description || null,
+            required: q.required,
+            config: q.config,
+          },
+        }),
+    ),
+  );
+  return NextResponse.json({ ok: true });
+}

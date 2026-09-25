@@ -4,23 +4,23 @@
 
 ## 认证
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
+| 方法 | 路径                 | 说明                                             |
+| ---- | -------------------- | ------------------------------------------------ |
 | POST | `/api/auth/register` | `{ username, password }`；首个账号成为超级管理员 |
-| POST | `/api/auth/login` | 登录并写入 HttpOnly Cookie |
-| POST | `/api/auth/logout` | 清除会话并跳转登录页 |
+| POST | `/api/auth/login`    | 登录并写入 HttpOnly Cookie                       |
+| POST | `/api/auth/logout`   | 清除会话并跳转登录页                             |
 
 ## 问卷
 
-| 方法 | 路径 | 说明 |
-| --- | --- | --- |
-| GET/POST | `/api/surveys` | 列表或创建问卷 |
-| GET/PATCH/DELETE | `/api/surveys/[id]` | 读取、更新或删除自己的问卷 |
-| POST | `/api/surveys/[id]/status` | `{ status: "ACTIVE|PAUSED|STOPPED" }` |
-| POST/PUT | `/api/surveys/[id]/questions` | 新增问题或批量保存问题 |
-| DELETE | `/api/surveys/[id]/questions/[questionId]` | 删除问题 |
-| GET | `/api/surveys/[id]/analytics` | 汇总、趋势和题目分析 |
-| GET | `/api/surveys/[id]/export` | 下载 UTF-8 BOM CSV |
+| 方法             | 路径                                       | 说明                       |
+| ---------------- | ------------------------------------------ | -------------------------- | ------ | ----------- |
+| GET/POST         | `/api/surveys`                             | 列表或创建问卷             |
+| GET/PATCH/DELETE | `/api/surveys/[id]`                        | 读取、更新或删除自己的问卷 |
+| POST             | `/api/surveys/[id]/status`                 | `{ status: "ACTIVE         | PAUSED | STOPPED" }` |
+| POST/PUT         | `/api/surveys/[id]/questions`              | 新增问题或批量保存问题     |
+| DELETE           | `/api/surveys/[id]/questions/[questionId]` | 删除问题                   |
+| GET              | `/api/surveys/[id]/analytics`              | 汇总、趋势和题目分析       |
+| GET              | `/api/surveys/[id]/export`                 | 下载 UTF-8 BOM CSV         |
 
 ## 公开填写
 
