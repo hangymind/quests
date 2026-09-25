@@ -1,10 +1,8 @@
 "use client";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { useRouter } from "next/navigation";
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   async function submit(e: FormEvent<HTMLFormElement>) {
@@ -12,25 +10,32 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     setLoading(true);
     setError("");
     const form = new FormData(e.currentTarget);
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15_000);
     try {
       const res = await fetch(`/api/auth/${mode}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({ username: form.get("username"), password: form.get("password") }),
       });
       const text = await res.text();
-      let data: { error?: string } = {};
+      let data: { error?: string; redirect?: string } = {};
       try {
         data = text ? JSON.parse(text) : {};
       } catch {
         data = {};
       }
       if (!res.ok) return setError(data.error || "服务暂时不可用，请检查数据库连接");
-      router.push("/dashboard");
-      router.refresh();
-    } catch {
-      setError("无法连接服务，请稍后重试");
+      window.location.replace(data.redirect || "/dashboard");
+    } catch (requestError) {
+      setError(
+        requestError instanceof DOMException && requestError.name === "AbortError"
+          ? "登录请求超时，请检查数据库连接"
+          : "无法连接服务，请稍后重试",
+      );
     } finally {
+      window.clearTimeout(timeout);
       setLoading(false);
     }
   }

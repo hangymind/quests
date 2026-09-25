@@ -15,8 +15,8 @@ export async function POST(request: Request) {
       !(await bcrypt.compare(password, user.passwordHash))
     )
       return NextResponse.json({ error: "用户名或密码错误" }, { status: 401 });
-    await createSession(user.id);
-    return NextResponse.json({ ok: true });
+    await createSession(user.id, request);
+    return NextResponse.json({ ok: true, redirect: "/dashboard" });
   } catch (error) {
     console.error("Login failed", error);
     return NextResponse.json({ error: "数据库暂时不可用，请联系管理员" }, { status: 503 });

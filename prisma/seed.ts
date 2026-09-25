@@ -1,19 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { DEFAULT_PERMISSIONS } from "../lib/permissions";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const permissions = [
-    ["survey:create", "创建问卷"],
-    ["survey:edit", "编辑问卷"],
-    ["survey:publish", "发布问卷"],
-    ["survey:analytics", "查看统计"],
-    ["survey:export", "导出数据"],
-    ["admin:users", "管理用户"],
-    ["admin:roles", "管理身份组"],
-  ];
-  for (const [key, description] of permissions)
+  for (const { key, description } of DEFAULT_PERMISSIONS)
     await prisma.permission.upsert({
       where: { key },
       update: { description },
