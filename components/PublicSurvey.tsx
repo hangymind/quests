@@ -25,12 +25,29 @@ type S = {
     action: string;
   }[];
 };
+
+function createDeviceId() {
+  if (typeof globalThis.crypto?.randomUUID === "function") return globalThis.crypto.randomUUID();
+
+  if (typeof globalThis.crypto?.getRandomValues === "function") {
+    const bytes = new Uint8Array(16);
+    globalThis.crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
+  return `legacy-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+}
+
 export function PublicSurvey() {
   const { slug } = useParams<{ slug: string }>();
   const [survey, setSurvey] = useState<S | null>(null);
   const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   useEffect(() => {
     fetch(`/api/public/surveys/${slug}`)
@@ -58,21 +75,37 @@ export function PublicSurvey() {
   }
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     setError("");
-    let deviceId = localStorage.getItem("quest-device");
-    if (!deviceId) {
-      deviceId = crypto.randomUUID();
-      localStorage.setItem("quest-device", deviceId);
+    setSubmitting(true);
+    try {
+      let deviceId = localStorage.getItem("quest-device");
+      if (!deviceId) {
+        deviceId = createDeviceId();
+        localStorage.setItem("quest-device", deviceId);
+      }
+
+      const response = await fetch(`/api/public/surveys/${slug}/responses`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answers, deviceId }),
+      });
+      const responseText = await response.text();
+      let result: { error?: string } = {};
+      try {
+        result = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        result = {};
+      }
+      if (!response.ok) return setError(result.error || "提交失败，请稍后重试");
+
+      localStorage.removeItem(`quest:${slug}`);
+      setDone(true);
+    } catch {
+      setError("无法连接服务器，请检查网络后重试");
+    } finally {
+      setSubmitting(false);
     }
-    const r = await fetch(`/api/public/surveys/${slug}/responses`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answers, deviceId }),
-    });
-    const d = await r.json();
-    if (!r.ok) return setError(d.error);
-    localStorage.removeItem(`quest:${slug}`);
-    setDone(true);
   }
   if (loading) return <State symbol="…" title="正在加载问卷" text="请稍候。" />;
   if (error && !survey) return <State symbol="!" title="暂时无法填写" text={error} />;
@@ -118,7 +151,10 @@ export function PublicSurvey() {
           {error && <div className="auth-error">{error}</div>}
           <div className="submit-area">
             <span className="muted">提交前请确认你的回答</span>
-            <button className="btn btn-primary">提交问卷</button>
+            <button className="btn btn-primary" disabled={submitting}>
+              {submitting && <span className="spinner" />}
+              {submitting ? "提交中" : "提交问卷"}
+            </button>
           </div>
         </form>
       </article>
