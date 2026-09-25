@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SurveyStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  STOPPED
+}
+
+enum QuestionType {
+  TEXT
+  TEXTAREA
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  SELECT
+  RATING
+  DATE
+  NUMBER
+}
+
+model User {
+  id           String       @id @default(cuid())
+  username     String       @unique
+  passwordHash String
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  roles        UserRole[]
+  surveys      Survey[]
+  responses    SurveyResponse[]
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  description String
+  roles       RolePermission[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+}
+
+model Survey {
+  id                 String       @id @default(cuid())
+  slug               String       @unique
+  title              String
+  description        String?
+  status             SurveyStatus @default(DRAFT)
+  allowAnonymous     Boolean      @default(true)
+  requireLogin       Boolean      @default(false)
+  restrictDevice     Boolean      @default(false)
+  restrictIp         Boolean      @default(false)
+  maxSubmissions     Int          @default(1)
+  showProgress       Boolean      @default(true)
+  showQuestionNumber Boolean      @default(true)
+  startsAt           DateTime?
+  endsAt             DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  ownerId            String
+  owner              User         @relation(fields: [ownerId], references: [id])
+  questions          SurveyQuestion[]
+  rules              SurveyLogicRule[]
+  responses          SurveyResponse[]
+  events             SurveyEvent[]
+}
+
+model SurveyQuestion {
+  id          String       @id @default(cuid())
+  surveyId    String
+  order       Int
+  type        QuestionType
+  title       String
+  description String?
+  required    Boolean      @default(false)
+  config      Json
+  survey      Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  answers     SurveyAnswer[]
+  rules       SurveyLogicRule[] @relation("targetQuestion")
+  @@index([surveyId, order])
+}
+
+model SurveyLogicRule {
+  id              String @id @default(cuid())
+  surveyId        String
+  sourceQuestionId String
+  targetQuestionId String
+  operator        String
+  value           Json
+  action          String
+  survey          Survey @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  targetQuestion  SurveyQuestion @relation("targetQuestion", fields: [targetQuestionId], references: [id], onDelete: Cascade)
+}
+
+model SurveyResponse {
+  id           String       @id @default(cuid())
+  surveyId     String
+  respondentId String?
+  ipHash       String?
+  deviceHash   String?
+  status       String       @default("COMPLETED")
+  startedAt    DateTime     @default(now())
+  completedAt  DateTime?
+  survey       Survey       @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  respondent   User?        @relation(fields: [respondentId], references: [id])
+  answers      SurveyAnswer[]
+  @@index([surveyId, completedAt])
+}
+
+model SurveyAnswer {
+  id         String @id @default(cuid())
+  responseId String
+  questionId String
+  value      Json
+  response   SurveyResponse @relation(fields: [responseId], references: [id], onDelete: Cascade)
+  question   SurveyQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  @@unique([responseId, questionId])
+}
+
+model SurveyEvent {
+  id        String   @id @default(cuid())
+  surveyId  String
+  type      String
+  createdAt DateTime @default(now())
+  survey    Survey   @relation(fields: [surveyId], references: [id], onDelete: Cascade)
+  @@index([surveyId, createdAt])
+}

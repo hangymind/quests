@@ -1,0 +1,2 @@
+import { notFound } from "next/navigation";import { getSessionUser } from "@/lib/auth";import { prisma } from "@/lib/prisma";import { SurveyEditor } from "@/components/SurveyEditor";import "./editor.css";
+export default async function EditPage({params}:{params:Promise<{id:string}>}){const user=(await getSessionUser())!;const {id}=await params;const survey=await prisma.survey.findFirst({where:{id,ownerId:user.id},include:{questions:{orderBy:{order:"asc"}}}});if(!survey)notFound();return <SurveyEditor initial={JSON.parse(JSON.stringify(survey))}/>}
