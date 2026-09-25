@@ -76,7 +76,7 @@ export default async function Dashboard() {
               </div>
               <div className="muted">{s._count.responses} 份答卷</div>
               <div className="muted">{s.updatedAt.toLocaleDateString("zh-CN")}</div>
-              <SurveyActions id={s.id} status={s.status} slug={s.slug} />
+              <SurveyActions id={s.id} title={s.title} status={s.status} slug={s.slug} />
             </div>
           ))
         )}

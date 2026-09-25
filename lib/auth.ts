@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { prisma } from "./prisma";
-import { SUPER_ADMIN_PERMISSIONS } from "./permissions";
 
 const COOKIE = "quest_session";
 const secret = () => process.env.SESSION_SECRET || "dev-only-change-this-secret";
@@ -55,6 +54,7 @@ export async function getSessionUser() {
       select: {
         id: true,
         username: true,
+        isSuperAdmin: true,
         roles: {
           select: {
             role: {
@@ -77,13 +77,14 @@ export function hasPermission(
   user: NonNullable<Awaited<ReturnType<typeof getSessionUser>>>,
   permission: string,
 ) {
-  return user.roles.some(
-    ({ role }) =>
-      role.name === "超级管理员" ||
+  return (
+    user.isSuperAdmin ||
+    user.roles.some(({ role }) =>
       role.permissions.some((item) => item.permission.key === permission),
+    )
   );
 }
 
 export function isSuperAdmin(user: NonNullable<Awaited<ReturnType<typeof getSessionUser>>>) {
-  return SUPER_ADMIN_PERMISSIONS.every((permission) => hasPermission(user, permission));
+  return user.isSuperAdmin;
 }

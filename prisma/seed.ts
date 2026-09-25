@@ -29,6 +29,7 @@ async function main() {
       data: {
         username: "demo",
         passwordHash: await bcrypt.hash("demo1234", 12),
+        isSuperAdmin: true,
         roles: { create: { roleId: admin.id } },
       },
     });

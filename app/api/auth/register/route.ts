@@ -48,6 +48,7 @@ export async function POST(request: Request) {
         data: {
           username: parsed.data.username,
           passwordHash,
+          isSuperAdmin: true,
           roles: { create: { roleId: role.id } },
         },
       });

@@ -1,6 +1,8 @@
 .public-shell {
   min-height: 100vh;
-  background: #edf4f7;
+  background:
+    linear-gradient(rgba(232, 241, 247, 0.9), rgba(244, 247, 250, 0.96)),
+    url("/assets/wife.jpg") center / cover fixed;
   padding: 54px 20px 36px;
 }
 .public-top {
@@ -32,16 +34,17 @@
 .public-paper {
   max-width: 760px;
   margin: auto;
-  background: var(--paper);
-  border: 1px solid #d5e1e8;
-  border-radius: 8px;
-  box-shadow: var(--shadow);
+  background: rgba(255, 253, 249, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 16px;
+  box-shadow: 0 24px 68px rgba(30, 58, 87, 0.14);
+  backdrop-filter: blur(22px) saturate(1.1);
   overflow: hidden;
 }
 .public-cover {
   padding: 38px 42px 30px;
   border-bottom: 1px solid var(--line);
-  background: linear-gradient(110deg, #fffdf9, #f1fbfd);
+  background: rgba(255, 255, 255, 0.26);
 }
 .public-cover h1 {
   font-size: 31px;
@@ -79,7 +82,7 @@
   gap: 10px;
   padding: 10px 11px;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 11px;
   margin: 3px 0;
 }
 .choice:hover {
@@ -100,7 +103,7 @@
   height: 42px;
   border: 1px solid var(--line);
   background: white;
-  border-radius: 6px;
+  border-radius: 10px;
 }
 .rating button.active {
   background: var(--navy);
@@ -124,11 +127,12 @@
   max-width: 600px;
   margin: 12vh auto;
   text-align: center;
-  background: white;
-  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.82);
   padding: 50px 30px;
-  border-radius: 8px;
-  box-shadow: var(--shadow);
+  border-radius: 16px;
+  box-shadow: 0 24px 68px rgba(30, 58, 87, 0.14);
+  backdrop-filter: blur(22px) saturate(1.1);
 }
 .public-state .symbol {
   width: 58px;

@@ -2,12 +2,21 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 228px minmax(0, 1fr);
+  background:
+    linear-gradient(rgba(232, 241, 247, 0.82), rgba(244, 247, 250, 0.94)),
+    url("/assets/wife.jpg") center / cover fixed;
 }
 .sidebar {
   position: sticky;
   top: 0;
   height: 100vh;
-  background: #10294f;
+  margin: 14px 0 14px 14px;
+  height: calc(100vh - 28px);
+  background: rgba(12, 38, 75, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.17);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(21, 48, 79, 0.18);
+  backdrop-filter: blur(24px) saturate(1.12);
   color: #d8e6f6;
   padding: 24px 16px;
   display: flex;
@@ -38,14 +47,19 @@
   gap: 11px;
   min-height: 42px;
   padding: 0 12px;
-  border-radius: 7px;
+  border-radius: 11px;
   color: #bfcfe1;
   font-size: 14px;
   font-weight: 650;
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
 }
 .nav a:hover {
   color: white;
-  background: #ffffff0c;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(2px);
 }
 .nav svg {
   width: 18px;
@@ -81,9 +95,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 32px;
-  background: rgba(255, 255, 255, 0.84);
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(16px);
+  margin: 14px 18px 0;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 14px;
+  box-shadow: 0 8px 30px rgba(34, 63, 93, 0.08);
+  backdrop-filter: blur(22px) saturate(1.18);
   position: sticky;
   top: 0;
   z-index: 5;
@@ -100,10 +118,32 @@
   max-width: 1440px;
   margin: 0 auto;
 }
+.console-shell .card {
+  background: rgba(255, 255, 255, 0.66);
+  border-color: rgba(255, 255, 255, 0.82);
+  border-radius: 14px;
+  box-shadow:
+    0 16px 42px rgba(30, 58, 87, 0.08),
+    inset 0 1px rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(1.12);
+}
+.console-shell .btn {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+}
+.console-shell .btn-primary {
+  background: rgba(16, 42, 86, 0.94);
+}
+.console-shell .input {
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(10px);
+}
 .page-head {
   display: flex;
   justify-content: space-between;
-  align-items: end;
+  align-items: flex-end;
   gap: 24px;
   margin-bottom: 26px;
 }
@@ -123,6 +163,14 @@
 }
 .metric {
   padding: 20px;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+  animation: surface-in 360ms ease both;
+}
+.metric:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 46px rgba(30, 58, 87, 0.12);
 }
 .metric small {
   color: var(--muted);
@@ -153,12 +201,18 @@
 }
 .survey-row {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) 110px 110px 140px 210px;
+  grid-template-columns: minmax(220px, 1fr) 90px 100px 120px minmax(300px, auto);
   align-items: center;
   min-height: 74px;
   padding: 10px 18px;
   border-top: 1px solid var(--line);
   gap: 12px;
+}
+.survey-row {
+  transition: background 160ms ease;
+}
+.survey-row:hover {
+  background: rgba(255, 255, 255, 0.44);
 }
 .survey-row:first-child {
   border-top: 0;
@@ -183,7 +237,7 @@
 .bars {
   height: 190px;
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   gap: 13px;
   padding-top: 20px;
 }
@@ -191,14 +245,27 @@
   flex: 1;
   height: 100%;
   display: flex;
-  align-items: end;
+  align-items: flex-end;
   gap: 7px;
 }
 .bar {
   flex: 1;
   min-width: 12px;
   background: var(--ice);
-  border-radius: 4px 4px 0 0;
+  border-radius: 8px 8px 3px 3px;
+  animation: bar-rise 500ms ease both;
+}
+@keyframes surface-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes bar-rise {
+  from {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
 }
 .bar-label {
   font-size: 11px;
@@ -211,6 +278,7 @@
     grid-template-columns: 72px minmax(0, 1fr);
   }
   .sidebar {
+    margin-left: 8px;
     padding: 20px 10px;
   }
   .side-brand {
@@ -250,6 +318,8 @@
     height: 64px;
     width: 100%;
     z-index: 20;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
     padding: 7px 12px;
   }
   .side-brand,
@@ -283,7 +353,7 @@
   .survey-row > :not(:first-child):not(:last-child) {
     display: none;
   }
-  .survey-actions .btn:not(.btn-primary) {
+  .survey-actions .btn:not(.btn-primary):not(.btn-danger) {
     display: none;
   }
 }

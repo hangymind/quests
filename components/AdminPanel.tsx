@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { useToast } from "./ToastProvider";
 type User = {
   id: string;
   username: string;
@@ -14,27 +16,67 @@ type Role = {
   canRename: boolean;
   _count: { users: number };
 };
-export function AdminPanel() {
+type ManagedSurvey = {
+  id: string;
+  title: string;
+  slug: string;
+  status: string;
+  updatedAt: string;
+  owner: { id: string; username: string };
+  _count: { questions: number; responses: number };
+};
+export function AdminPanel({ canManageAllSurveys }: { canManageAllSurveys: boolean }) {
+  const { notify } = useToast();
   const [users, setUsers] = useState<User[]>([]),
     [roles, setRoles] = useState<Role[]>([]),
+    [surveys, setSurveys] = useState<ManagedSurvey[]>([]),
     [editingRoleId, setEditingRoleId] = useState<string | null>(null),
     [roleName, setRoleName] = useState(""),
-    [roleError, setRoleError] = useState("");
+    [roleError, setRoleError] = useState(""),
+    [deletingSurvey, setDeletingSurvey] = useState<ManagedSurvey | null>(null),
+    [busy, setBusy] = useState(false);
+
   async function load() {
-    setUsers(await (await fetch("/api/admin/users")).json());
-    setRoles(await (await fetch("/api/admin/role-groups")).json());
+    try {
+      const [usersResponse, rolesResponse, surveysResponse] = await Promise.all([
+        fetch("/api/admin/users"),
+        fetch("/api/admin/role-groups"),
+        canManageAllSurveys ? fetch("/api/admin/surveys") : null,
+      ]);
+      if (!usersResponse.ok || !rolesResponse.ok || (surveysResponse && !surveysResponse.ok))
+        throw new Error("管理数据加载失败");
+      const [nextUsers, nextRoles, nextSurveys] = await Promise.all([
+        usersResponse.json(),
+        rolesResponse.json(),
+        surveysResponse ? surveysResponse.json() : Promise.resolve([]),
+      ]);
+      setUsers(nextUsers);
+      setRoles(nextRoles);
+      setSurveys(nextSurveys);
+    } catch {
+      notify("管理数据加载失败，请刷新重试", "error");
+    }
   }
   useEffect(() => {
     load();
   }, []);
   async function toggle(u: User) {
-    const r = await fetch("/api/admin/users", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: u.id, isActive: !u.isActive }),
-    });
-    if (!r.ok) alert((await r.json()).error);
-    load();
+    setBusy(true);
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: u.id, isActive: !u.isActive }),
+      });
+      const result = await response.json();
+      if (!response.ok) return notify(result.error || "用户状态更新失败", "error");
+      notify(u.isActive ? "用户已停用" : "用户已启用", "success");
+      await load();
+    } catch {
+      notify("无法连接服务器", "error");
+    } finally {
+      setBusy(false);
+    }
   }
 
   function beginRename(role: Role) {
@@ -47,17 +89,44 @@ export function AdminPanel() {
     const name = roleName.trim();
     if (!name) return setRoleError("身份组名称不能为空");
 
-    const response = await fetch("/api/admin/role-groups", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: role.id, name }),
-    });
-    const result = await response.json();
-    if (!response.ok) return setRoleError(result.error || "重命名失败");
+    setBusy(true);
+    try {
+      const response = await fetch("/api/admin/role-groups", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: role.id, name }),
+      });
+      const result = await response.json();
+      if (!response.ok) return setRoleError(result.error || "重命名失败");
 
-    setEditingRoleId(null);
-    setRoleError("");
-    await load();
+      setEditingRoleId(null);
+      setRoleError("");
+      notify("身份组名称已更新，权限保持不变", "success");
+      await load();
+    } catch {
+      setRoleError("无法连接服务器");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function deleteSurvey() {
+    if (!deletingSurvey) return;
+    setBusy(true);
+    try {
+      const response = await fetch(`/api/admin/surveys/${deletingSurvey.id}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (!response.ok) return notify(result.error || "问卷删除失败", "error");
+      setDeletingSurvey(null);
+      notify("用户问卷已删除", "success");
+      await load();
+    } catch {
+      notify("无法连接服务器", "error");
+    } finally {
+      setBusy(false);
+    }
   }
   return (
     <div className="admin-grid">
@@ -84,7 +153,7 @@ export function AdminPanel() {
                 <td>{u.roles.map((r) => r.role.name).join("、") || "普通用户"}</td>
                 <td>{u._count.surveys}</td>
                 <td>
-                  <button className="btn" onClick={() => toggle(u)}>
+                  <button className="btn" disabled={busy} onClick={() => toggle(u)}>
                     {u.isActive ? "启用" : "禁用"}
                   </button>
                 </td>
@@ -112,7 +181,7 @@ export function AdminPanel() {
                       if (event.key === "Escape") setEditingRoleId(null);
                     }}
                   />
-                  <button className="btn btn-primary" onClick={() => renameRole(r)}>
+                  <button className="btn btn-primary" disabled={busy} onClick={() => renameRole(r)}>
                     保存
                   </button>
                   <button className="btn" onClick={() => setEditingRoleId(null)}>
@@ -140,6 +209,54 @@ export function AdminPanel() {
           </div>
         ))}
       </section>
+      {canManageAllSurveys && (
+        <section className="card admin-surveys">
+          <div className="panel-pad admin-survey-head">
+            <div>
+              <h2>全部问卷</h2>
+              <p className="muted">超级管理员可以检查并删除任意用户创建的问卷。</p>
+            </div>
+            <span className="badge">{surveys.length} 份</span>
+          </div>
+          <div className="admin-survey-list">
+            {surveys.length === 0 ? (
+              <div className="empty">当前没有问卷</div>
+            ) : (
+              surveys.map((survey) => (
+                <div className="admin-survey-row" key={survey.id}>
+                  <div className="survey-title">
+                    <strong>{survey.title}</strong>
+                    <span>/q/{survey.slug}</span>
+                  </div>
+                  <div>
+                    <strong>{survey.owner.username}</strong>
+                    <span className="row-hint">创建者</span>
+                  </div>
+                  <div className="muted">
+                    {survey._count.questions} 题 · {survey._count.responses} 份答卷
+                  </div>
+                  <span className={`badge ${survey.status.toLowerCase()}`}>{survey.status}</span>
+                  <button className="btn btn-danger" onClick={() => setDeletingSurvey(survey)}>
+                    删除
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      )}
+      <ConfirmDialog
+        open={Boolean(deletingSurvey)}
+        title="删除用户问卷？"
+        description={
+          deletingSurvey
+            ? `将永久删除 ${deletingSurvey.owner.username} 的“${deletingSurvey.title}”及全部答卷。`
+            : ""
+        }
+        loading={busy}
+        onCancel={() => setDeletingSurvey(null)}
+        onConfirm={deleteSurvey}
+      />
     </div>
   );
 }

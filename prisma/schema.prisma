@@ -30,6 +30,7 @@ model User {
   username     String       @unique
   passwordHash String
   isActive     Boolean      @default(true)
+  isSuperAdmin Boolean      @default(false)
   createdAt    DateTime     @default(now())
   roles        UserRole[]
   surveys      Survey[]

@@ -2,7 +2,7 @@
 import { QuestionType } from "@prisma/client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { QUESTION_TYPES } from "@/lib/survey";
+import { QUESTION_TYPES } from "@/lib/question-types";
 type Q = {
   id: string;
   order: number;

@@ -2,12 +2,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSessionUser, hasPermission } from "@/lib/auth";
 import { Icons } from "@/components/Icons";
+import { ToastProvider } from "@/components/ToastProvider";
 import "./console.css";
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
   const user = await getSessionUser();
   if (!user) redirect("/login");
   const admin = hasPermission(user, "admin:users");
-  const roleNames = user.roles.map(({ role }) => role.name).join("、") || "成员";
+  const roleNames = user.isSuperAdmin
+    ? `超级管理员 · ${user.roles.map(({ role }) => role.name).join("、") || "系统管理组"}`
+    : user.roles.map(({ role }) => role.name).join("、") || "成员";
   return (
     <div className="console-shell">
       <aside className="sidebar">
@@ -54,7 +57,7 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
           </div>
           <span>{new Intl.DateTimeFormat("zh-CN", { dateStyle: "long" }).format(new Date())}</span>
         </header>
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </main>
     </div>
   );

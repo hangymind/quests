@@ -30,4 +30,4 @@
 
 ## 管理
 
-`GET/PATCH /api/admin/users` 用于列出、启用/停用用户和更新身份组；`GET/POST /api/admin/role-groups` 用于查看与创建身份组。接口均要求对应管理权限。
+`GET/PATCH /api/admin/users` 用于列出、启用/停用用户和更新身份组；`GET/POST/PATCH /api/admin/role-groups` 用于查看、创建和重命名身份组。`GET /api/admin/surveys` 返回全部用户问卷，`DELETE /api/admin/surveys/[id]` 允许超级管理员删除指定问卷。接口均要求对应管理权限。

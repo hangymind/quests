@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSessionUser, hasPermission } from "@/lib/auth";
+import { getSessionUser, hasPermission, isSuperAdmin } from "@/lib/auth";
 import { AdminPanel } from "@/components/AdminPanel";
 import "../extras.css";
 export default async function Admin() {
@@ -14,7 +14,7 @@ export default async function Admin() {
           <p>控制谁可以创建、发布、查看和导出数据。</p>
         </div>
       </div>
-      <AdminPanel />
+      <AdminPanel canManageAllSurveys={isSuperAdmin(user)} />
     </div>
   );
 }
