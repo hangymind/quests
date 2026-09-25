@@ -155,6 +155,11 @@
 @media (max-width: 600px) {
   .public-shell {
     padding: 28px 12px 30px;
+    background-attachment: scroll;
+  }
+  .public-paper,
+  .public-state {
+    backdrop-filter: none;
   }
   .public-cover,
   .public-form {

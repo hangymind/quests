@@ -32,6 +32,7 @@ export function SurveyEditor({ initial }: { initial: Survey }) {
   const [survey, setSurvey] = useState(initial);
   const [selected, setSelected] = useState<string | null>(initial.questions[0]?.id || null);
   const [saving, setSaving] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<"questions" | "properties" | null>(null);
   const q = survey.questions.find((x) => x.id === selected);
   async function add(type: QuestionType) {
     const choice = ["SINGLE_CHOICE", "MULTIPLE_CHOICE", "SELECT"].includes(type);
@@ -98,6 +99,24 @@ export function SurveyEditor({ initial }: { initial: Survey }) {
           </div>
         </div>
         <div className="toolbar">
+          <div className="editor-mobile-tools" aria-label="移动端编辑工具">
+            <button
+              className="btn"
+              type="button"
+              aria-expanded={mobilePanel === "questions"}
+              onClick={() => setMobilePanel(mobilePanel === "questions" ? null : "questions")}
+            >
+              问题
+            </button>
+            <button
+              className="btn"
+              type="button"
+              aria-expanded={mobilePanel === "properties"}
+              onClick={() => setMobilePanel(mobilePanel === "properties" ? null : "properties")}
+            >
+              属性
+            </button>
+          </div>
           <span className="save-state">{saving ? "保存中…" : "更改仅在保存后生效"}</span>
           <a className="btn" href={`/q/${survey.slug}`} target="_blank">
             预览
@@ -108,10 +127,24 @@ export function SurveyEditor({ initial }: { initial: Survey }) {
         </div>
       </header>
       <div className="editor-grid">
-        <aside className="question-nav">
+        <aside className={`question-nav ${mobilePanel === "questions" ? "mobile-open" : ""}`}>
+          <div className="mobile-panel-head">
+            <strong>问题列表</strong>
+            <button
+              className="btn icon-btn"
+              type="button"
+              onClick={() => setMobilePanel(null)}
+              aria-label="关闭问题列表"
+            >
+              ×
+            </button>
+          </div>
           <button
             className={`question-item ${selected === null ? "active" : ""}`}
-            onClick={() => setSelected(null)}
+            onClick={() => {
+              setSelected(null);
+              setMobilePanel(null);
+            }}
           >
             <b>⚙</b>
             <span>问卷设置</span>
@@ -123,7 +156,10 @@ export function SurveyEditor({ initial }: { initial: Survey }) {
             <button
               key={x.id}
               className={`question-item ${x.id === selected ? "active" : ""}`}
-              onClick={() => setSelected(x.id)}
+              onClick={() => {
+                setSelected(x.id);
+                setMobilePanel(null);
+              }}
             >
               <b>{i + 1}</b>
               <span>{x.title}</span>
@@ -189,7 +225,18 @@ export function SurveyEditor({ initial }: { initial: Survey }) {
             )}
           </div>
         </main>
-        <aside className="properties open">
+        <aside className={`properties ${mobilePanel === "properties" ? "mobile-open" : "open"}`}>
+          <div className="mobile-panel-head">
+            <strong>属性设置</strong>
+            <button
+              className="btn icon-btn"
+              type="button"
+              onClick={() => setMobilePanel(null)}
+              aria-label="关闭属性设置"
+            >
+              ×
+            </button>
+          </div>
           {q ? (
             <div className="property-form">
               <div className="side-title">问题属性</div>

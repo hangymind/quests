@@ -7,9 +7,12 @@
   place-items: center;
   z-index: 50;
   padding: 20px;
+  overflow-y: auto;
 }
 .modal {
   width: min(520px, 100%);
+  max-height: min(720px, calc(100dvh - 40px));
+  overflow-y: auto;
   padding: 24px;
   animation: modal-in 180ms ease both;
 }
@@ -116,6 +119,24 @@
 @media (max-width: 800px) {
   .admin-grid {
     grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 620px) {
+  .modal-backdrop {
+    align-items: center;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(76px, env(safe-area-inset-bottom));
+  }
+  .modal {
+    max-height: calc(100dvh - 104px);
+    padding: 20px;
+  }
+  .confirm-dialog {
+    grid-template-columns: 36px 1fr;
+    gap: 12px;
+  }
+  .confirm-symbol {
+    width: 36px;
+    height: 36px;
   }
 }
 .role-row {

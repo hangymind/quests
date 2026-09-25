@@ -310,6 +310,7 @@
 @media (max-width: 620px) {
   .console-shell {
     display: block;
+    background-attachment: scroll;
   }
   .sidebar {
     position: fixed;
@@ -355,5 +356,16 @@
   }
   .survey-actions .btn:not(.btn-primary):not(.btn-danger) {
     display: none;
+  }
+  .console-shell .card,
+  .console-shell .btn,
+  .console-shell .input,
+  .sidebar,
+  .topbar {
+    backdrop-filter: none;
+  }
+  .toast-viewport {
+    top: max(12px, env(safe-area-inset-top));
+    right: 12px;
   }
 }
